@@ -43,3 +43,44 @@ RESPONSE:
 ```
 ## cosa ne penso
 mi piace come lo ha rappresentato visivamente, poi ha semplicemente riscritto ciò che ho detto nel prompt, comunque in questo modo è più presentabile.
+
+# SECONDA FASE: IMPLEMENTAZIONE
+per prima cosa ho fatto generare a chat semplicemente l'intero progetto con le indicazioni date precedentemente:
+
+PROMPT:
+```
+CHAT:
+Would you like help structuring the actual socket communication or the code layout next?
+
+
+Hai detto:
+Yes. Write the layout in python as if you were a professional programmer who writes easy to read code though.
+```
+
+RESPONSE:
+```bash
+network_game/
+│
+├── main_giocatore.py     # Player client app
+├── arbitro.py            # Game logic + player coordination
+├── sender.py             # Collects and sends scores
+├── castle_db.py          # Database logic (mock or real DB)
+│
+├── network/
+│   ├── socket_utils.py   # Common socket helpers
+│   └── protocols.py      # Shared message formats
+│
+└── games/
+    ├── tris.py           # Game logic: Tic-Tac-Toe
+    └── rps.py            # Game logic: Rock Paper Scissors
+```
+## cosa ne penso
+mi ha dato grande ispirazione sul come organizzare i file del progetto e, dopo aver letto il codice generato, apprezzo l'idea di modularizzare l'elemento del gioco che ora non è gestito dall'arbitro come inizialmente avevo immaginato ma direttamente da propri file.
+
+Il codice generato è funzionale solo nel miglior scenario (player1 si connette a player2 e inizia la partita). Quando un giocatore finisce una partita il programma si spegne automaticamente e ciò non era proprio quello che avevo pianificato. Dopo serie di testing i difetti principali sono i seguenti: codice molto debole(un input non predetto e caput), gestione sincrona di più partite che invece dovrebbero essere in contemporanea.
+
+Nel senso, ci sta perchè era il primo prompt, proverò poi a raffinare il codice ancora forse un paio di volte. Se non ce la fa ci penserò io.
+
+## TENTATIVI
+### primo
+    come detto andato male ma comunque utile

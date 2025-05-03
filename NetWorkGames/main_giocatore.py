@@ -5,7 +5,7 @@ SERVER_HOST = "localhost"  # arbitro's host
 SERVER_PORT = 5000  # arbitro's port
 
 def main():
-    if()
+    #if(!(logica di login(current_ip)))
     nickname = input("Enter your name: ")
     game_type = input("Enter game (tris/rps): ")
     
