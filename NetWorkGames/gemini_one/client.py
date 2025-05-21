@@ -1,4 +1,5 @@
 import socket
+import threading
 import time
 
 ip = '127.0.0.1'
@@ -6,13 +7,9 @@ porta = 5006
 endpoint = (ip, porta)
 buf_size = 1024
 
-def start_client():
-    skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    try:
-        skt.connect(endpoint)
-        print("Connected to server. Start chatting or ask about games!")
-
-        while True:
+def receive_messages(skt):
+    while True:
+        try:
             data_bytes = skt.recv(buf_size)
             if not data_bytes:
                 print("Server disconnected.")
@@ -22,10 +19,24 @@ def start_client():
 
             if "Goodbye!" in server_response or "AI not available" in server_response:
                 break
+        except socket.error as e:
+            print(f"Socket error: {e}")
+            break
 
+def start_client():
+    skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        skt.connect(endpoint)
+        print("Connected to server. Start chatting or ask about games!")
+
+        # Start a thread to receive messages from the server
+        receive_thread = threading.Thread(target=receive_messages, args=(skt,))
+        receive_thread.start()
+
+        while True:
             message = input("You: ")
             if not message.strip():
-                continue # Don't send empty messages
+                continue  # Don't send empty messages
 
             skt.sendall(message.encode("utf-8"))
 
@@ -47,3 +58,4 @@ def start_client():
 
 if __name__ == "__main__":
     start_client()
+# The client connects to the server and allows the user to send messages.

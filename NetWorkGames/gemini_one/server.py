@@ -45,6 +45,10 @@ buf_size = 1024
 skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 skt.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
+# --- Global Variables ---
+waiting_clients = []
+client_pairs = {}
+
 # --- Game/Chat Management Function ---
 def game_chat_ia(con, addr):
     print(f"Thread started for connection from: {addr}")
@@ -90,7 +94,7 @@ def game_chat_ia(con, addr):
                     top_k=2,
                     top_p=0.5,
                     temperature=0.5,
-                    response_mime_type='text/plain',  # Changed to text/plain
+                    response_mime_type='text/plain',
                     stop_sequences=['\n'],
                     seed=42,
                 ),
@@ -114,6 +118,87 @@ def game_chat_ia(con, addr):
         print(f"Closing connection for: {addr}")
         con.close()
 
+def handle_client(con, addr):
+    print(f"Connection accepted from: {addr}")
+
+    # Add the client to the waiting list
+    waiting_clients.append((con, addr))
+    con.sendall("Waiting for more players to start the game...".encode("utf-8"))
+
+    # Start pairing when there are 5 players
+    if len(waiting_clients) == 5:
+        start_pairing()
+
+def start_pairing():
+    print("Starting pairing process...")
+
+    # Pair clients
+    while len(waiting_clients) >= 2:
+        client1, addr1 = waiting_clients.pop(0)
+        client2, addr2 = waiting_clients.pop(0)
+
+        # Pair the clients
+        client_pairs[addr1] = client2
+        client_pairs[addr2] = client1
+
+        print(f"Pairing clients: {addr1} and {addr2}")
+
+        # Notify clients that they are paired
+        client1.sendall(f"You are {addr1} and you are paired with {addr2}. Start chatting!".encode("utf-8"))
+        client2.sendall(f"You are {addr2} and you are paired with {addr1}. Start chatting!".encode("utf-8"))
+
+        # Start chat handlers for the paired clients
+        client_handler1 = threading.Thread(target=game_chat_client, args=(client1, addr1, client2))
+        client_handler2 = threading.Thread(target=game_chat_client, args=(client2, addr2, client1))
+
+        client_handler1.start()
+        client_handler2.start()
+
+    # Pair remaining client with AI if any
+    if waiting_clients:
+        client, addr = waiting_clients.pop(0)
+        print(f"Pairing client {addr} with AI")
+        client.sendall(f"You are {addr} and you are paired with the AI. Start chatting!".encode("utf-8"))
+
+        # Start chat handler for the client paired with AI
+        client_handler = threading.Thread(target=game_chat_ia, args=(client, addr))
+        client_handler.start()
+
+def game_chat_client(con, addr, peer):
+    print(f"Thread started for connection from: {addr}")
+
+    try:
+        while True:
+            data_bytes = con.recv(buf_size)
+            if not data_bytes:
+                print(f"Client {addr} disconnected.")
+                break
+
+            user_message = data_bytes.decode("utf-8").strip()
+            print(f"Received from client {addr}: '{user_message}'")
+
+            if user_message.lower() in ["bye", "goodbye", "exit", "i'm done"]:
+                response_text = "Alright, bye for now! It was interesting chatting."
+                con.sendall(response_text.encode("utf-8"))
+                peer.sendall(f"Your peer {addr} has left the chat.".encode("utf-8"))
+                break
+
+            # Forward the message to the peer
+            peer.sendall(f"{addr}: {user_message}".encode("utf-8"))
+
+    except socket.error as e:
+        print(f"Socket error for {addr}: {e}")
+    except Exception as e:
+        print(f"Unexpected error for {addr}: {e}")
+    finally:
+        print(f"Closing connection for: {addr}")
+        con.close()
+        if addr in client_pairs:
+            peer_addr = client_pairs[addr]
+            del client_pairs[addr]
+            if peer_addr in client_pairs:
+                del client_pairs[peer_addr]
+
 # --- Server Setup ---
 try:
     skt.bind(endpoint)
@@ -124,9 +209,8 @@ try:
     while True:
         try:
             con, addr = skt.accept()
-            print(f"Connection accepted from: {addr}")
 
-            client_handler = threading.Thread(target=game_chat_ia, args=(con, addr))
+            client_handler = threading.Thread(target=handle_client, args=(con, addr))
             client_handler.start()
 
         except socket.error as e:
