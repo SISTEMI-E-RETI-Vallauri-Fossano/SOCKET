@@ -2,7 +2,7 @@ import socket
 from network.socket_utils import send_json, receive_json, get_local_ip
 import curses
 
-SERVER_HOST = "10.0.102.196"  # arbitro's host
+SERVER_HOST = "localhost"  # arbitro's host
 SERVER_PORT = 5000  # arbitro's port
 
 import curses

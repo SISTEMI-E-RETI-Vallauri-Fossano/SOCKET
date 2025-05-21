@@ -3,8 +3,8 @@ import threading
 from network.socket_utils import send_json, receive_json
 from games import tris, rps
 
-HOST = '10.0.102.196'
-PORT = 5000
+HOST = 'localhost'
+PORT = 5000 
 
 games = {
     "tris": tris.GameSession,
