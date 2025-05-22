@@ -12,10 +12,10 @@ def receive_messages(skt):
         try:
             data_bytes = skt.recv(buf_size)
             if not data_bytes:
-                print("Server disconnected.")
+                print("\nServer disconnected.")
                 break
             server_response = data_bytes.decode("utf-8")
-            print(f"Server: {server_response}")
+            print(f"\nServer: {server_response}")
 
             if "Goodbye!" in server_response or "AI not available" in server_response:
                 break
@@ -27,8 +27,6 @@ def start_client():
     skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         skt.connect(endpoint)
-        print("Connected to server. Start chatting or ask about games!")
-
         # Start a thread to receive messages from the server
         receive_thread = threading.Thread(target=receive_messages, args=(skt,))
         receive_thread.start()

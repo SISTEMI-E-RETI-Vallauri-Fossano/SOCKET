@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Turing Game UI</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    #chat { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; }
+    input, button { padding: 8px; font-size: 14px; }
+    #message { width: 70%; }
+    #status { color: red; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Chat with the Turing Game AI</h2>
+  <div id="chat"></div>
+  <input type="text" id="message" placeholder="Type your message" />
+  <button id="sendBtn" onclick="sendMessage()">Send</button>
+  <div id="status"></div>
+
+  <script>
+    const ws = new WebSocket("ws://localhost:8765");
+    const chatBox = document.getElementById("chat");
+    const input = document.getElementById("message");
+    const sendBtn = document.getElementById("sendBtn");
+    const status = document.getElementById("status");
+
+    let isActive = true;
+
+    ws.onmessage = function(event) {
+      const text = event.data;
+      const msg = document.createElement("div");
+      msg.textContent = "AI: " + text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      if (text.includes("Goodbye!") || text.includes("conversation has ended") || text.includes("disconnected")) {
+        endChat("The session has ended.");
+      }
+    };
+
+    ws.onclose = function() {
+      endChat("Connection closed by the server.");
+    };
+
+    ws.onerror = function(err) {
+      endChat("WebSocket error occurred.");
+      console.error("WebSocket error:", err);
+    };
+
+    function sendMessage() {
+      const message = input.value.trim();
+      if (!isActive || !message) return;
+
+      ws.send(message);
+
+      const msg = document.createElement("div");
+      msg.textContent = "You: " + message;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+      input.value = "";
+    }
+
+    function endChat(message) {
+      isActive = false;
+      input.disabled = true;
+      sendBtn.disabled = true;
+      status.textContent = message;
+    }
+  </script>
+</body>
+</html>
